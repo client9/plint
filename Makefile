@@ -33,7 +33,7 @@ fmt: ## reformat source code
 lint: ## lint and verify repo is already formatted
 	go mod tidy
 	git diff --exit-code -- go.mod go.sum
-	test -z "$$(go fmt -l ./...)"
+	test -z "$$(gofmt -l .)"
 	golangci-lint run ./...
 
 clean: ## remove any generated files

@@ -70,13 +70,16 @@ func TestParseMarkdown_CodeBlock(t *testing.T) {
 }
 
 func TestParseMarkdown_FrontMatter(t *testing.T) {
-	src := []byte("---\ntitle: My Doc\n---\n\nA paragraph.\n")
+	src := []byte("---\nplint:\n  disable:\n    - throat-clearing\n  allow:\n    - in fact\n---\n\nA paragraph.\n")
 	doc, err := ParseMarkdown(src, "test.md")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if doc.FrontMatter.Raw == nil {
-		t.Fatal("expected front matter, got nil")
+	if len(doc.Meta.Disable) != 1 || doc.Meta.Disable[0] != "throat-clearing" {
+		t.Errorf("Meta.Disable = %v, want [throat-clearing]", doc.Meta.Disable)
+	}
+	if len(doc.Meta.Allow) != 1 || doc.Meta.Allow[0] != "in fact" {
+		t.Errorf("Meta.Allow = %v, want [in fact]", doc.Meta.Allow)
 	}
 	if len(doc.Nodes) != 1 || doc.Nodes[0].Type != NodeParagraph {
 		t.Errorf("expected 1 paragraph node, got %+v", doc.Nodes)
@@ -89,8 +92,8 @@ func TestParseMarkdown_NoFrontMatter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if doc.FrontMatter.Raw != nil {
-		t.Error("expected nil front matter")
+	if len(doc.Meta.Allow) != 0 || len(doc.Meta.Disable) != 0 {
+		t.Error("expected empty meta for document with no front matter")
 	}
 }
 

@@ -56,14 +56,17 @@ func LoadDir(dir string) ([]*RuleDef, error) {
 	return rules, nil
 }
 
-// AddToTrie adds all token patterns from rule into t.
+// AddToTrie adds all token patterns from rule into t, expanding any (a|b)
+// alternation groups before inserting.
 func AddToTrie(t *engine.Trie, rule *RuleDef) {
 	for _, phrase := range rule.Tokens {
-		tokens := engine.Tokenize(phrase)
-		words := make([]string, len(tokens))
-		for i, tok := range tokens {
-			words[i] = tok.Text
+		for _, expanded := range Expand(phrase) {
+			tokens := engine.Tokenize(expanded)
+			words := make([]string, len(tokens))
+			for i, tok := range tokens {
+				words[i] = tok.Text
+			}
+			t.Add(words, engine.Rule{Name: rule.ID})
 		}
-		t.Add(words, engine.Rule{Name: rule.ID})
 	}
 }

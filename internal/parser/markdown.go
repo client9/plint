@@ -28,16 +28,22 @@ type TextNode struct {
 	Type   NodeType
 }
 
-// FrontMatter holds raw parsed front matter. Fields are populated as needed.
-type FrontMatter struct {
-	Raw []byte // JSON-encoded front matter, nil if absent
+// DocumentMeta holds per-document lint configuration from the `plint:` front matter key.
+type DocumentMeta struct {
+	Allow   []string `json:"allow"`
+	Disable []string `json:"disable"`
+}
+
+// plintFrontMatter is the shape of the parsed front matter JSON: {"plint": {...}}
+type plintFrontMatter struct {
+	Plint DocumentMeta `json:"plint"`
 }
 
 // Document is the result of parsing a source file.
 type Document struct {
-	Nodes       []TextNode
-	FrontMatter FrontMatter
-	Source      string // filename, for output
+	Nodes  []TextNode
+	Meta   DocumentMeta
+	Source string // filename, for output
 }
 
 // ParseMarkdown parses src into a Document. source is used as the filename in output.
@@ -47,11 +53,13 @@ func ParseMarkdown(src []byte, source string) (*Document, error) {
 		return nil, fmt.Errorf("front matter: %w", err)
 	}
 
-	// Validate meta is well-formed JSON if present.
+	var docMeta DocumentMeta
 	if meta != nil {
-		if !json.Valid(meta) {
-			return nil, fmt.Errorf("front matter: invalid JSON after conversion")
+		var fm plintFrontMatter
+		if err := json.Unmarshal(meta, &fm); err != nil {
+			return nil, fmt.Errorf("front matter: %w", err)
 		}
+		docMeta = fm.Plint
 	}
 
 	nodes, err := parseBody(body)
@@ -60,9 +68,9 @@ func ParseMarkdown(src []byte, source string) (*Document, error) {
 	}
 
 	return &Document{
-		Nodes:       nodes,
-		FrontMatter: FrontMatter{Raw: meta},
-		Source:      source,
+		Nodes:  nodes,
+		Meta:   docMeta,
+		Source: source,
 	}, nil
 }
 

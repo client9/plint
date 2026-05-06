@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"text/template"
 
 	"github.com/nickg/plint/internal/engine"
@@ -45,20 +46,28 @@ func Build(h engine.Hit, src []byte, lm engine.LineMap, defs map[string]*rules.R
 	return f
 }
 
-// WriteJSON writes findings as a Vale-compatible JSON object keyed by filename.
-func WriteJSON(w io.Writer, filename string, findings []Finding) error {
-	out := map[string][]Finding{filename: findings}
+// WriteJSON writes all findings as a Vale-compatible JSON object keyed by filename.
+func WriteJSON(w io.Writer, findings map[string][]Finding) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(out)
+	return enc.Encode(findings)
 }
 
 // WriteLine writes one line per finding in file:line:col:rule:message format.
-func WriteLine(w io.Writer, filename string, findings []Finding) error {
-	for _, f := range findings {
-		_, err := fmt.Fprintf(w, "%s:%d:%d:%s:%s\n", filename, f.Line, f.Span[0], f.Check, f.Message)
-		if err != nil {
-			return err
+// Files are output in sorted order for deterministic output.
+func WriteLine(w io.Writer, findings map[string][]Finding) error {
+	files := make([]string, 0, len(findings))
+	for f := range findings {
+		files = append(files, f)
+	}
+	sort.Strings(files)
+
+	for _, file := range files {
+		for _, f := range findings[file] {
+			_, err := fmt.Fprintf(w, "%s:%d:%d:%s:%s\n", file, f.Line, f.Span[0], f.Check, f.Message)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -66,7 +75,7 @@ func WriteLine(w io.Writer, filename string, findings []Finding) error {
 
 // WriteTemplate loads a Go text/template from templatePath and executes it
 // with map[string][]Finding as the data.
-func WriteTemplate(w io.Writer, templatePath string, filename string, findings []Finding) error {
+func WriteTemplate(w io.Writer, templatePath string, findings map[string][]Finding) error {
 	src, err := os.ReadFile(templatePath)
 	if err != nil {
 		return err
@@ -75,5 +84,5 @@ func WriteTemplate(w io.Writer, templatePath string, filename string, findings [
 	if err != nil {
 		return err
 	}
-	return tmpl.Execute(w, map[string][]Finding{filename: findings})
+	return tmpl.Execute(w, findings)
 }

@@ -1,0 +1,4 @@
+github.com/client9/tojson v0.0.0-20260430045233-2062b77be918 h1:Cfn0gFOGe1+UeOjlQU7TvTGl1imIjvx0qL0m1mo3qnM=
+github.com/client9/tojson v0.0.0-20260430045233-2062b77be918/go.mod h1:O+LLKspWkhoGIXqswSCKZPFS1kgLOpL12DST21bpapI=
+github.com/yuin/goldmark v1.8.2 h1:kEGpgqJXdgbkhcOgBxkC0X0PmoPG1ZyoZ117rDVp4zE=
+github.com/yuin/goldmark v1.8.2/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=

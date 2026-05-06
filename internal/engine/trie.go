@@ -68,7 +68,7 @@ func (t *Trie) Scan(tokens []Token) []Hit {
 			hits = append(hits, Hit{
 				Rule:      rule,
 				Offset:    tokens[i].Offset,
-				EndOffset: last.Offset + len(last.Text),
+				EndOffset: last.Offset + last.Len,
 				Len:       n,
 			})
 			i += n

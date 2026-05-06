@@ -7,10 +7,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/nickg/plint/internal/engine"
-	"github.com/nickg/plint/internal/output"
-	"github.com/nickg/plint/internal/parser"
-	"github.com/nickg/plint/internal/rules"
+	"github.com/nickg/plint"
 )
 
 func main() {
@@ -35,22 +32,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Load rules.
-	defs, err := loadRules(*rulesFlag)
+	linter, err := plint.New(*rulesFlag)
 	if err != nil {
 		fatal(err)
-	}
-	defsByID := make(map[string]*rules.RuleDef, len(defs))
-	knownIDs := make(map[string]bool, len(defs))
-	for _, r := range defs {
-		defsByID[r.ID] = r
-		knownIDs[r.ID] = true
-	}
-
-	// Build trie.
-	trie := &engine.Trie{}
-	for _, r := range defs {
-		rules.AddToTrie(trie, r)
 	}
 
 	// Collect input sources: files from args, or stdin if no args given.
@@ -77,9 +61,9 @@ func main() {
 	}
 
 	// Lint each source and collect findings.
-	allFindings := make(map[string][]output.Finding)
+	allFindings := make(map[string][]plint.Finding)
 	for _, src := range sources {
-		findings, warnings, err := lintSource(src.name, src.r, trie, defsByID, knownIDs)
+		findings, warnings, err := linter.LintReader(src.r, src.name)
 		if err != nil {
 			fatal(err)
 		}
@@ -101,11 +85,11 @@ func main() {
 	if !*quiet {
 		switch *outputFlag {
 		case "json":
-			err = output.WriteJSON(os.Stdout, allFindings)
+			err = plint.WriteJSON(os.Stdout, allFindings)
 		case "line":
-			err = output.WriteLine(os.Stdout, allFindings)
+			err = plint.WriteLine(os.Stdout, allFindings)
 		default:
-			err = output.WriteTemplate(os.Stdout, *outputFlag, allFindings)
+			err = plint.WriteTemplate(os.Stdout, *outputFlag, allFindings)
 		}
 		if err != nil {
 			fatal(err)
@@ -113,44 +97,6 @@ func main() {
 	}
 
 	os.Exit(1)
-}
-
-func lintSource(name string, r io.Reader, trie *engine.Trie, defsByID map[string]*rules.RuleDef, knownIDs map[string]bool) ([]output.Finding, []string, error) {
-	src, err := io.ReadAll(r)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", name, err)
-	}
-	doc, err := parser.ParseMarkdown(src, name)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", name, err)
-	}
-
-	warnings := engine.ValidateMeta(doc.Meta, knownIDs)
-
-	hits := engine.Lint(doc, trie, engine.DefaultScope)
-	hits = engine.Filter(hits, doc.Meta, src)
-
-	lm := engine.NewLineMap(src)
-	findings := make([]output.Finding, len(hits))
-	for i, h := range hits {
-		findings[i] = output.Build(h, src, lm, defsByID)
-	}
-	return findings, warnings, nil
-}
-
-func loadRules(path string) ([]*rules.RuleDef, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if info.IsDir() {
-		return rules.LoadDir(path)
-	}
-	r, err := rules.Load(path)
-	if err != nil {
-		return nil, err
-	}
-	return []*rules.RuleDef{r}, nil
 }
 
 func fatal(err error) {

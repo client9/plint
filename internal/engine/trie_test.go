@@ -6,7 +6,7 @@ import "testing"
 func toks(words ...string) []Token {
 	t := make([]Token, len(words))
 	for i, w := range words {
-		t[i] = Token{Text: w, Offset: i}
+		t[i] = Token{Text: w, Offset: i, Len: len(w)}
 	}
 	return t
 }

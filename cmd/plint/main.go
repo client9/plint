@@ -84,7 +84,7 @@ func main() {
 
 	if !*quiet {
 		switch *outputFlag {
-		case "json":
+		case "json", "JSON":
 			err = plint.WriteJSON(os.Stdout, allFindings)
 		case "line":
 			err = plint.WriteLine(os.Stdout, allFindings)

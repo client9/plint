@@ -15,6 +15,8 @@ func main() {
 	outputFlag := flag.String("output", "line", `output format: "line", "json", or a path to a Go template file`)
 	quiet := flag.Bool("q", false, "suppress output; exit 0 (clean), 1 (findings), 2 (error)")
 	ver := flag.Bool("v", false, "print version and exit")
+	flag.String("config", "", "path to config file (vale-ls compatibility, unused)")
+	flag.String("filter", "", "JMESPath alert filter (vale-ls compatibility, unused)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage: plint [flags] [file.md ...]\n")

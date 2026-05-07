@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/nickg/plint/internal/engine"
 	"github.com/nickg/plint/internal/parser"
@@ -153,12 +154,23 @@ func loadRuleDefs(path string) ([]*rules.RuleDef, error) {
 	if err != nil {
 		return nil, err
 	}
-	if info.IsDir() {
-		return rules.LoadDir(path)
+	if !info.IsDir() {
+		id := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+		r, err := rules.Load(path, id)
+		if err != nil {
+			return nil, err
+		}
+		return []*rules.RuleDef{r}, nil
 	}
-	r, err := rules.Load(path)
+	cfg, err := rules.LoadConfig(path)
 	if err != nil {
 		return nil, err
 	}
-	return []*rules.RuleDef{r}, nil
+	if cfg == nil {
+		return nil, fmt.Errorf("%s: no config.yaml found", path)
+	}
+	if len(cfg.Pipeline) == 0 {
+		return nil, fmt.Errorf("%s/config.yaml: pipeline is empty", path)
+	}
+	return rules.LoadPipeline(path, cfg.Pipeline)
 }

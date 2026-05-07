@@ -52,9 +52,10 @@ func (r *RuleDef) FormatMessage(match string, suggestions []string) string {
 	return buf.String()
 }
 
-// Load reads a single YAML rule file and returns the parsed RuleDef.
-// Fails fast if the message template is invalid.
-func Load(path string) (*RuleDef, error) {
+// Load reads a single rule file (.yaml or .yml) and returns the parsed RuleDef.
+// id is always set from the caller (filename stem or pipeline entry); any id
+// field in the YAML is ignored. Fails fast if the message template is invalid.
+func Load(path, id string) (*RuleDef, error) {
 	src, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -67,9 +68,7 @@ func Load(path string) (*RuleDef, error) {
 	if err := json.Unmarshal(jsonBytes, &rule); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
-	if rule.ID == "" {
-		return nil, fmt.Errorf("%s: rule missing id", path)
-	}
+	rule.ID = id
 	switch rule.Type {
 	case "", "phrase":
 		rule.Type = "phrase"
@@ -91,21 +90,30 @@ func Load(path string) (*RuleDef, error) {
 	return &rule, nil
 }
 
-// LoadDir reads all *.yaml files in dir and returns the parsed rules.
-func LoadDir(dir string) ([]*RuleDef, error) {
-	paths, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
-	if err != nil {
-		return nil, err
+// LoadByID resolves id to a file under dir (trying .yaml then .yml) and loads it.
+// id may contain slashes for subdirectory namespacing (e.g. "ms/capitalization").
+func LoadByID(dir, id string) (*RuleDef, error) {
+	rel := filepath.FromSlash(id)
+	for _, ext := range []string{".yaml", ".yml"} {
+		path := filepath.Join(dir, rel+ext)
+		if _, err := os.Stat(path); err == nil {
+			return Load(path, id)
+		}
 	}
-	var rules []*RuleDef
-	for _, p := range paths {
-		r, err := Load(p)
+	return nil, fmt.Errorf("rule %q: no .yaml or .yml file found in %s", id, dir)
+}
+
+// LoadPipeline loads rules listed in pipeline from dir, in order.
+func LoadPipeline(dir string, pipeline []string) ([]*RuleDef, error) {
+	result := make([]*RuleDef, 0, len(pipeline))
+	for _, id := range pipeline {
+		r, err := LoadByID(dir, id)
 		if err != nil {
 			return nil, err
 		}
-		rules = append(rules, r)
+		result = append(result, r)
 	}
-	return rules, nil
+	return result, nil
 }
 
 // AddToTrie adds all token patterns from rule into t, expanding any (a|b)

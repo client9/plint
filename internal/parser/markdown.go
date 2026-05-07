@@ -30,8 +30,25 @@ type TextNode struct {
 
 // DocumentMeta holds per-document lint configuration from the `plint:` front matter key.
 type DocumentMeta struct {
-	Allow   []string `json:"allow"`
+	Rules    RulesMeta    `json:"rules"`
+	Phrases  PhrasesMeta  `json:"phrases"`
+	Spelling SpellingMeta `json:"spelling"`
+}
+
+// RulesMeta controls which rules are active for a document.
+type RulesMeta struct {
 	Disable []string `json:"disable"`
+}
+
+// PhrasesMeta suppresses specific matched phrases (case-insensitive) from trie rules.
+type PhrasesMeta struct {
+	Ignore []string `json:"ignore"`
+}
+
+// SpellingMeta holds per-document spelling configuration.
+type SpellingMeta struct {
+	Words  []string `json:"words"`  // added to the per-document spell checker
+	Ignore []string `json:"ignore"` // specific words to suppress from spell hits
 }
 
 // plintFrontMatter is the shape of the parsed front matter JSON: {"plint": {...}}
@@ -65,6 +82,17 @@ func ParseMarkdown(src []byte, source string) (*Document, error) {
 	nodes, err := parseBody(body)
 	if err != nil {
 		return nil, err
+	}
+
+	// TextNode offsets from goldmark are relative to body (the front-matter-
+	// stripped source). Shift them to be absolute byte offsets into src so that
+	// all downstream consumers can index directly into the original source bytes.
+	// tojson.FromFrontMatter guarantees body is an unmodified subslice of src,
+	// so len(src)-len(body) is the exact byte offset of the body start in src.
+	if bodyOffset := len(src) - len(body); bodyOffset > 0 {
+		for i := range nodes {
+			nodes[i].Offset += bodyOffset
+		}
 	}
 
 	return &Document{

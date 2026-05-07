@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/nickg/plint/internal/engine"
 	"github.com/nickg/plint/internal/parser"
@@ -25,9 +26,10 @@ type Finding struct {
 
 // Linter holds loaded rules and applies them to documents.
 type Linter struct {
-	trie     *engine.Trie
-	defs     map[string]*rules.RuleDef
-	knownIDs map[string]bool
+	trie       *engine.Trie
+	defs       map[string]*rules.RuleDef
+	knownIDs   map[string]bool
+	spellRules []spellRuleState
 }
 
 // New creates a Linter from rulesPath, which may be a directory of *.yaml
@@ -37,15 +39,39 @@ func New(rulesPath string) (*Linter, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Determine the directory that contains the rule files so that relative
+	// paths in spell rules (wordlists, dictionaries) resolve correctly.
+	rd := rulesPath
+	if fi, statErr := os.Stat(rulesPath); statErr == nil && !fi.IsDir() {
+		rd = filepath.Dir(rulesPath)
+	}
+
 	trie := &engine.Trie{}
 	defsByID := make(map[string]*rules.RuleDef, len(defs))
 	knownIDs := make(map[string]bool, len(defs))
+	var spellRules []spellRuleState
+
 	for _, r := range defs {
 		defsByID[r.ID] = r
 		knownIDs[r.ID] = true
-		rules.AddToTrie(trie, r)
+		if r.Type == "spell" {
+			state, err := buildSpellState(r, rd)
+			if err != nil {
+				return nil, err
+			}
+			spellRules = append(spellRules, *state)
+		} else {
+			rules.AddToTrie(trie, r)
+		}
 	}
-	return &Linter{trie: trie, defs: defsByID, knownIDs: knownIDs}, nil
+
+	return &Linter{
+		trie:       trie,
+		defs:       defsByID,
+		knownIDs:   knownIDs,
+		spellRules: spellRules,
+	}, nil
 }
 
 // Lint parses src as Markdown and returns findings and any configuration
@@ -59,6 +85,15 @@ func (l *Linter) Lint(src []byte, filename string) ([]Finding, []string, error) 
 	warnings := engine.ValidateMeta(doc.Meta, l.knownIDs)
 
 	hits := engine.Lint(doc, l.trie, engine.DefaultScope)
+
+	for i := range l.spellRules {
+		sr := &l.spellRules[i]
+		checker := sr.buildChecker(doc.Meta.Spelling)
+		spellHits := engine.SpellCheck(doc, checker, engine.DefaultScope, sr.rule)
+		spellHits = filterSpellingIgnore(spellHits, doc.Meta.Spelling.Ignore, src)
+		hits = append(hits, spellHits...)
+	}
+
 	hits = engine.Filter(hits, doc.Meta, src)
 
 	lm := engine.NewLineMap(src)

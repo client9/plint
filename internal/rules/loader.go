@@ -14,11 +14,17 @@ import (
 
 // RuleDef is a parsed rule file.
 type RuleDef struct {
-	ID       string   `json:"id"`
-	Message  string   `json:"message"` // template source, e.g. `"{{.Match}}" is wordy`
-	Severity string   `json:"severity"`
-	Link     string   `json:"link"`
-	Tokens   []string `json:"tokens"`
+	ID string `json:"id"`
+	// Type is "phrase" (default) or "spell". Phrase rules use Tokens; spell
+	// rules use Dictionaries, Wordlists, and Words.
+	Type         string   `json:"type"`
+	Message      string   `json:"message"` // template source, e.g. `"{{.Match}}" may be misspelled`
+	Severity     string   `json:"severity"`
+	Link         string   `json:"link"`
+	Tokens       []string `json:"tokens"`       // phrase rules only
+	Dictionaries []string `json:"dictionaries"` // spell rules: base dict first, supplements follow
+	Wordlists    []string `json:"wordlists"`    // spell rules: paths to word list files
+	Words        []string `json:"words"`        // spell rules: inline allowed words
 
 	msgTmpl *template.Template // compiled at load time
 }
@@ -54,6 +60,16 @@ func Load(path string) (*RuleDef, error) {
 	if rule.ID == "" {
 		return nil, fmt.Errorf("%s: rule missing id", path)
 	}
+	switch rule.Type {
+	case "", "phrase":
+		rule.Type = "phrase"
+	case "spell":
+		if len(rule.Dictionaries) == 0 {
+			return nil, fmt.Errorf("%s: spell rule must list at least one dictionary", path)
+		}
+	default:
+		return nil, fmt.Errorf("%s: unknown rule type %q", path, rule.Type)
+	}
 	tmpl, err := template.New(rule.ID).Option("missingkey=error").Parse(rule.Message)
 	if err != nil {
 		return nil, fmt.Errorf("%s: message template: %w", path, err)
@@ -80,8 +96,12 @@ func LoadDir(dir string) ([]*RuleDef, error) {
 }
 
 // AddToTrie adds all token patterns from rule into t, expanding any (a|b)
-// alternation groups before inserting.
+// alternation groups before inserting. Spell rules are skipped; they are
+// handled separately via SpellCheck.
 func AddToTrie(t *engine.Trie, rule *RuleDef) {
+	if rule.Type == "spell" {
+		return
+	}
 	for _, phrase := range rule.Tokens {
 		for _, expanded := range Expand(phrase) {
 			tokens := engine.Tokenize(expanded)

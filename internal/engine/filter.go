@@ -7,21 +7,21 @@ import (
 )
 
 // Filter removes hits suppressed by per-document metadata.
-// disable removes all hits for a rule by ID; allow removes hits whose matched
-// text (case-insensitive) appears in the allow list.
+// rules.disable removes all hits for a rule by ID; phrases.ignore removes hits
+// whose matched text (case-insensitive) appears in the ignore list.
 func Filter(hits []Hit, meta parser.DocumentMeta, src []byte) []Hit {
-	if len(meta.Disable) == 0 && len(meta.Allow) == 0 {
+	if len(meta.Rules.Disable) == 0 && len(meta.Phrases.Ignore) == 0 {
 		return hits
 	}
 
-	disabled := make(map[string]bool, len(meta.Disable))
-	for _, id := range meta.Disable {
+	disabled := make(map[string]bool, len(meta.Rules.Disable))
+	for _, id := range meta.Rules.Disable {
 		disabled[id] = true
 	}
 
-	allowed := make(map[string]bool, len(meta.Allow))
-	for _, phrase := range meta.Allow {
-		allowed[strings.ToLower(phrase)] = true
+	ignored := make(map[string]bool, len(meta.Phrases.Ignore))
+	for _, phrase := range meta.Phrases.Ignore {
+		ignored[strings.ToLower(phrase)] = true
 	}
 
 	out := hits[:0]
@@ -29,9 +29,9 @@ func Filter(hits []Hit, meta parser.DocumentMeta, src []byte) []Hit {
 		if disabled[h.Rule.Name] {
 			continue
 		}
-		if len(allowed) > 0 {
+		if len(ignored) > 0 {
 			match := strings.ToLower(string(src[h.Offset:h.EndOffset]))
-			if allowed[match] {
+			if ignored[match] {
 				continue
 			}
 		}

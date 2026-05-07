@@ -10,9 +10,9 @@ import (
 // returns a warning message for each disable entry that names an unknown rule.
 func ValidateMeta(meta parser.DocumentMeta, knownIDs map[string]bool) []string {
 	var warnings []string
-	for _, id := range meta.Disable {
+	for _, id := range meta.Rules.Disable {
 		if !knownIDs[id] {
-			warnings = append(warnings, fmt.Sprintf("disable: unknown rule %q", id))
+			warnings = append(warnings, fmt.Sprintf("rules.disable: unknown rule %q", id))
 		}
 	}
 	return warnings

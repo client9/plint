@@ -70,16 +70,22 @@ func TestParseMarkdown_CodeBlock(t *testing.T) {
 }
 
 func TestParseMarkdown_FrontMatter(t *testing.T) {
-	src := []byte("---\nplint:\n  disable:\n    - throat-clearing\n  allow:\n    - in fact\n---\n\nA paragraph.\n")
+	src := []byte("---\nplint:\n  rules:\n    disable:\n      - throat-clearing\n  phrases:\n    ignore:\n      - in fact\n  spelling:\n    words:\n      - kubernetes\n    ignore:\n      - GPT-4\n---\n\nA paragraph.\n")
 	doc, err := ParseMarkdown(src, "test.md")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(doc.Meta.Disable) != 1 || doc.Meta.Disable[0] != "throat-clearing" {
-		t.Errorf("Meta.Disable = %v, want [throat-clearing]", doc.Meta.Disable)
+	if len(doc.Meta.Rules.Disable) != 1 || doc.Meta.Rules.Disable[0] != "throat-clearing" {
+		t.Errorf("Meta.Rules.Disable = %v, want [throat-clearing]", doc.Meta.Rules.Disable)
 	}
-	if len(doc.Meta.Allow) != 1 || doc.Meta.Allow[0] != "in fact" {
-		t.Errorf("Meta.Allow = %v, want [in fact]", doc.Meta.Allow)
+	if len(doc.Meta.Phrases.Ignore) != 1 || doc.Meta.Phrases.Ignore[0] != "in fact" {
+		t.Errorf("Meta.Phrases.Ignore = %v, want [in fact]", doc.Meta.Phrases.Ignore)
+	}
+	if len(doc.Meta.Spelling.Words) != 1 || doc.Meta.Spelling.Words[0] != "kubernetes" {
+		t.Errorf("Meta.Spelling.Words = %v, want [kubernetes]", doc.Meta.Spelling.Words)
+	}
+	if len(doc.Meta.Spelling.Ignore) != 1 || doc.Meta.Spelling.Ignore[0] != "GPT-4" {
+		t.Errorf("Meta.Spelling.Ignore = %v, want [GPT-4]", doc.Meta.Spelling.Ignore)
 	}
 	if len(doc.Nodes) != 1 || doc.Nodes[0].Type != NodeParagraph {
 		t.Errorf("expected 1 paragraph node, got %+v", doc.Nodes)
@@ -92,8 +98,31 @@ func TestParseMarkdown_NoFrontMatter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(doc.Meta.Allow) != 0 || len(doc.Meta.Disable) != 0 {
+	if len(doc.Meta.Rules.Disable) != 0 || len(doc.Meta.Phrases.Ignore) != 0 {
 		t.Error("expected empty meta for document with no front matter")
+	}
+}
+
+func TestParseMarkdown_FrontMatterOffset(t *testing.T) {
+	// Offsets must be absolute into the original source, not relative to the
+	// front-matter-stripped body.
+	src := []byte("---\nplint:\n  rules:\n    disable: []\n---\n\nHello world.\n")
+	doc, err := ParseMarkdown(src, "test.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("got %d nodes, want 1", len(doc.Nodes))
+	}
+	node := doc.Nodes[0]
+	// The body starts after the closing "---\n"; verify the node offset
+	// actually points at "Hello" in the original src bytes.
+	if node.Offset >= len(src) {
+		t.Fatalf("node.Offset %d out of range", node.Offset)
+	}
+	got := string(src[node.Offset : node.Offset+5])
+	if got != "Hello" {
+		t.Errorf("src[node.Offset:+5] = %q, want %q", got, "Hello")
 	}
 }
 

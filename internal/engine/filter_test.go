@@ -19,7 +19,7 @@ func TestFilter_Disable(t *testing.T) {
 		t.Fatalf("pre-filter: got %d hits, want 2", len(hits))
 	}
 
-	hits = Filter(hits, parser.DocumentMeta{Disable: []string{"throat-clearing"}}, src)
+	hits = Filter(hits, parser.DocumentMeta{Rules: parser.RulesMeta{Disable: []string{"throat-clearing"}}}, src)
 	if len(hits) != 1 || hits[0].Rule.Name != "adverbial-inflation" {
 		t.Errorf("post-filter: got %+v, want only adverbial-inflation", hits)
 	}
@@ -38,7 +38,7 @@ func TestFilter_Allow(t *testing.T) {
 		t.Fatalf("pre-filter: got %d hits, want 2", len(hits))
 	}
 
-	hits = Filter(hits, parser.DocumentMeta{Allow: []string{"in fact"}}, src)
+	hits = Filter(hits, parser.DocumentMeta{Phrases: parser.PhrasesMeta{Ignore: []string{"in fact"}}}, src)
 	if len(hits) != 1 || hits[0].Rule.Name != "adverbial-inflation" {
 		t.Errorf("post-filter: got %+v, want only adverbial-inflation", hits)
 	}

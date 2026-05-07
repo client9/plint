@@ -25,6 +25,8 @@ type spellRuleState struct {
 
 // buildChecker creates a fresh Checker for a single document, layering
 // the global word lists and any per-document words on top of the base dict.
+// The returned checker also implements engine.Suggester when the base
+// dictionary has a suggester configured.
 func (s *spellRuleState) buildChecker(meta parser.SpellingMeta) engine.SpellChecker {
 	c := gospell.NewChecker(s.base)
 	for _, wl := range s.globalWordLists {
@@ -37,7 +39,26 @@ func (s *spellRuleState) buildChecker(meta parser.SpellingMeta) engine.SpellChec
 		}
 		c.AddWordList(docWL)
 	}
-	return c
+	return &spellCheckerWithSuggestions{c}
+}
+
+// spellCheckerWithSuggestions wraps a gospell.Checker and implements
+// engine.Suggester by converting gospell.Suggestion to plain strings.
+// This keeps the engine package free of gospell types.
+type spellCheckerWithSuggestions struct {
+	*gospell.Checker
+}
+
+func (s *spellCheckerWithSuggestions) Suggest(word string, limit int) []string {
+	suggestions, err := s.Checker.Suggest(word, limit)
+	if err != nil || len(suggestions) == 0 {
+		return nil
+	}
+	words := make([]string, len(suggestions))
+	for i, sg := range suggestions {
+		words[i] = sg.Word
+	}
+	return words
 }
 
 // buildSpellState loads the dictionary and word list files declared in a spell
@@ -49,6 +70,9 @@ func buildSpellState(def *rules.RuleDef, ruleDir string) (*spellRuleState, error
 	base, err := gospell.Open(resolveDict(def.Dictionaries[0], ruleDir), paths)
 	if err != nil {
 		return nil, fmt.Errorf("spell rule %q: %w", def.ID, err)
+	}
+	if err := base.SetSuggester(gospell.NewLevenshteinSuggester(gospell.LevenshteinOptions{})); err != nil {
+		return nil, fmt.Errorf("spell rule %q: configure suggester: %w", def.ID, err)
 	}
 
 	var globalWordLists []*gospell.WordList

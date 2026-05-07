@@ -103,6 +103,78 @@ func TestSpellCheck_MultipleMisses(t *testing.T) {
 	}
 }
 
+// suggestingChecker rejects words in its bad set and returns canned suggestions.
+type suggestingChecker struct {
+	bad         map[string]bool
+	suggestions map[string][]string
+}
+
+func (c *suggestingChecker) Spell(word string) bool {
+	return !c.bad[strings.ToLower(word)]
+}
+
+func (c *suggestingChecker) Suggest(word string, limit int) []string {
+	s := c.suggestions[strings.ToLower(word)]
+	if len(s) > limit {
+		s = s[:limit]
+	}
+	return s
+}
+
+func TestSpellCheck_SuggestionsPopulated(t *testing.T) {
+	src := []byte("The quikc fox.\n")
+	doc, _ := parser.ParseMarkdown(src, "test.md")
+
+	checker := &suggestingChecker{
+		bad:         map[string]bool{"quikc": true},
+		suggestions: map[string][]string{"quikc": {"quick", "quake"}},
+	}
+	hits := SpellCheck(doc, checker, DefaultScope, Rule{Name: "spelling"})
+
+	if len(hits) != 1 {
+		t.Fatalf("got %d hits, want 1", len(hits))
+	}
+	if len(hits[0].Suggestions) != 2 {
+		t.Fatalf("got %d suggestions, want 2", len(hits[0].Suggestions))
+	}
+	if hits[0].Suggestions[0] != "quick" {
+		t.Errorf("suggestions[0] = %q, want %q", hits[0].Suggestions[0], "quick")
+	}
+}
+
+func TestSpellCheck_SuggestionLimit(t *testing.T) {
+	src := []byte("Wrod.\n")
+	doc, _ := parser.ParseMarkdown(src, "test.md")
+
+	checker := &suggestingChecker{
+		bad:         map[string]bool{"wrod": true},
+		suggestions: map[string][]string{"wrod": {"word", "road", "wren", "wore", "writ", "wrath"}},
+	}
+	hits := SpellCheck(doc, checker, DefaultScope, Rule{Name: "spelling"})
+	if len(hits) != 1 {
+		t.Fatalf("got %d hits, want 1", len(hits))
+	}
+	if len(hits[0].Suggestions) > suggestionLimit {
+		t.Errorf("got %d suggestions, want at most %d", len(hits[0].Suggestions), suggestionLimit)
+	}
+}
+
+func TestSpellCheck_NoSuggestionsWithoutInterface(t *testing.T) {
+	src := []byte("The quikc fox.\n")
+	doc, _ := parser.ParseMarkdown(src, "test.md")
+
+	// badWordChecker does not implement Suggester — suggestions must be nil.
+	checker := &badWordChecker{bad: map[string]bool{"quikc": true}}
+	hits := SpellCheck(doc, checker, DefaultScope, Rule{Name: "spelling"})
+
+	if len(hits) != 1 {
+		t.Fatalf("got %d hits, want 1", len(hits))
+	}
+	if hits[0].Suggestions != nil {
+		t.Errorf("expected nil suggestions for non-Suggester checker, got %v", hits[0].Suggestions)
+	}
+}
+
 func TestSpellCheck_NoHitsWhenAllCorrect(t *testing.T) {
 	src := []byte("Everything looks fine here.\n")
 	doc, _ := parser.ParseMarkdown(src, "test.md")

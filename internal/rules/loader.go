@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/client9/tojson"
@@ -29,14 +30,23 @@ type RuleDef struct {
 	msgTmpl *template.Template // compiled at load time
 }
 
-// FormatMessage executes the message template with the matched text.
-// Falls back to the raw Message string if execution fails.
-func (r *RuleDef) FormatMessage(match string) string {
+// msgData is the template data passed to message templates.
+type msgData struct {
+	Match       string
+	Suggestions []string // nil for phrase rules; populated for spell rules
+}
+
+// FormatMessage executes the message template with the matched text and any
+// spelling suggestions. Falls back to the raw Message string if execution fails.
+// Templates may use {{.Match}}, {{.Suggestions}}, and the built-in join func:
+//
+//	{{if .Suggestions}}; try: {{join .Suggestions ", "}}{{end}}
+func (r *RuleDef) FormatMessage(match string, suggestions []string) string {
 	if r.msgTmpl == nil {
 		return r.Message
 	}
 	var buf bytes.Buffer
-	if err := r.msgTmpl.Execute(&buf, struct{ Match string }{match}); err != nil {
+	if err := r.msgTmpl.Execute(&buf, msgData{Match: match, Suggestions: suggestions}); err != nil {
 		return r.Message
 	}
 	return buf.String()
@@ -70,7 +80,10 @@ func Load(path string) (*RuleDef, error) {
 	default:
 		return nil, fmt.Errorf("%s: unknown rule type %q", path, rule.Type)
 	}
-	tmpl, err := template.New(rule.ID).Option("missingkey=error").Parse(rule.Message)
+	tmpl, err := template.New(rule.ID).
+		Funcs(template.FuncMap{"join": strings.Join}).
+		Option("missingkey=error").
+		Parse(rule.Message)
 	if err != nil {
 		return nil, fmt.Errorf("%s: message template: %w", path, err)
 	}

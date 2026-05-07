@@ -5,10 +5,11 @@ type Rule struct {
 }
 
 type Hit struct {
-	Rule      Rule
-	Offset    int // byte offset of first token in source
-	EndOffset int // byte offset just past last token
-	Len       int // number of tokens consumed
+	Rule        Rule
+	Offset      int      // byte offset of first token in source
+	EndOffset   int      // byte offset just past last token
+	Len         int      // number of tokens consumed
+	Suggestions []string // spelling suggestions; nil for phrase-rule hits
 }
 
 type trieNode struct {

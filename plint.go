@@ -126,7 +126,7 @@ func buildFinding(h engine.Hit, src []byte, lm engine.LineMap, filename string, 
 		Match: match,
 	}
 	if def, ok := defs[h.Rule.Name]; ok {
-		f.Message = def.FormatMessage(match)
+		f.Message = def.FormatMessage(match, h.Suggestions)
 		f.Severity = def.Severity
 		f.Link = def.Link
 	}

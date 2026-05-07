@@ -12,16 +12,27 @@ import (
 	"github.com/nickg/plint/internal/rules"
 )
 
-// Finding is a single lint result.
+// Action describes the automated fix available for a finding, matching the
+// Vale JSON schema so vale-ls and other Vale-compatible tools can consume it.
+// Name is nil when no automated fix is available.
+// Known names: "suggest" (spelling), "replace" (substitution), "remove" (deletion).
+type Action struct {
+	Name   *string  `json:"Name"`
+	Params []string `json:"Params"`
+}
+
+// Finding is a single lint result, Vale-compatible.
 type Finding struct {
-	File     string `json:"File"`
-	Line     int    `json:"Line"`
-	Span     [2]int `json:"Span"` // [col_start, col_end], 1-based
-	Check    string `json:"Check"`
-	Message  string `json:"Message"`
-	Severity string `json:"Severity"`
-	Match    string `json:"Match"`
-	Link     string `json:"Link"`
+	File        string `json:"File"`
+	Line        int    `json:"Line"`
+	Span        [2]int `json:"Span"` // [col_start, col_end], 1-based
+	Check       string `json:"Check"`
+	Message     string `json:"Message"`
+	Severity    string `json:"Severity"`
+	Match       string `json:"Match"`
+	Link        string `json:"Link"`
+	Action      Action `json:"Action"`
+	Description string `json:"Description"`
 }
 
 // Linter holds loaded rules and applies them to documents.
@@ -129,6 +140,10 @@ func buildFinding(h engine.Hit, src []byte, lm engine.LineMap, filename string, 
 		f.Message = def.FormatMessage(match, h.Suggestions)
 		f.Severity = def.Severity
 		f.Link = def.Link
+		if def.Type == "spell" {
+			name := "suggest"
+			f.Action = Action{Name: &name, Params: h.Suggestions}
+		}
 	}
 	return f
 }

@@ -4,6 +4,8 @@ github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
 github.com/client9/tojson v0.0.0-20260430045233-2062b77be918 h1:Cfn0gFOGe1+UeOjlQU7TvTGl1imIjvx0qL0m1mo3qnM=
 github.com/client9/tojson v0.0.0-20260430045233-2062b77be918/go.mod h1:O+LLKspWkhoGIXqswSCKZPFS1kgLOpL12DST21bpapI=
+github.com/client9/tojson v1.0.0 h1:9MyahtxZqlaPhjcmnNSxgumWBNrvXz//Qxm7Vv/oAhw=
+github.com/client9/tojson v1.0.0/go.mod h1:O+LLKspWkhoGIXqswSCKZPFS1kgLOpL12DST21bpapI=
 github.com/dgryski/trifles v0.0.0-20230903005119-f50d829f2e54 h1:SG7nF6SRlWhcT7cNTs5R6Hk4V2lcmLz2NsG2VnInyNo=
 github.com/dgryski/trifles v0.0.0-20230903005119-f50d829f2e54/go.mod h1:if7Fbed8SFyPtHLHbg49SI7NAdJiC5WIA09pe59rfAA=
 github.com/yuin/goldmark v1.8.2 h1:kEGpgqJXdgbkhcOgBxkC0X0PmoPG1ZyoZ117rDVp4zE=

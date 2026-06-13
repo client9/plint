@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/client9/gospell v0.0.0-00010101000000-000000000000
-	github.com/client9/tojson v0.0.0-20260430045233-2062b77be918
+	github.com/client9/tojson v1.0.0
 	github.com/yuin/goldmark v1.8.2
 )
 

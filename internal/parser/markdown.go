@@ -24,8 +24,8 @@ const (
 // TextNode is a span of prose text with its position and type.
 type TextNode struct {
 	Text   string
-	Offset int // byte offset into the original source
 	Type   NodeType
+	Offset int // byte offset into the original source
 }
 
 // DocumentMeta holds per-document lint configuration from the `plint:` front matter key.
@@ -58,9 +58,9 @@ type plintFrontMatter struct {
 
 // Document is the result of parsing a source file.
 type Document struct {
-	Nodes  []TextNode
-	Meta   DocumentMeta
 	Source string // filename, for output
+	Meta   DocumentMeta
+	Nodes  []TextNode
 }
 
 // ParseMarkdown parses src into a Document. source is used as the filename in output.

@@ -57,8 +57,8 @@ func main() {
 
 	// Collect input sources: files from args, or stdin if no args given.
 	type source struct {
-		name string
 		r    io.Reader
+		name string
 	}
 	var sources []source
 	if flag.NArg() == 0 {
@@ -128,8 +128,8 @@ func cmdFix(path string) {
 		fatal(err)
 	}
 	type valeFix struct {
-		Suggestions []string `json:"suggestions"`
 		Error       string   `json:"error"`
+		Suggestions []string `json:"suggestions"`
 	}
 	fix := valeFix{Suggestions: finding.Action.Params, Error: ""}
 	if fix.Suggestions == nil {

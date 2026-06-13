@@ -15,7 +15,8 @@ import (
 
 // RuleDef is a parsed rule file.
 type RuleDef struct {
-	ID string `json:"id"`
+	msgTmpl *template.Template // compiled at load time
+	ID      string             `json:"id"`
 	// Type is "phrase" (default) or "spell". Phrase rules use Tokens; spell
 	// rules use Dictionaries, Wordlists, and Words.
 	Type         string   `json:"type"`
@@ -27,7 +28,6 @@ type RuleDef struct {
 	Wordlists    []string `json:"wordlists"`    // spell rules: paths to word list files
 	Words        []string `json:"words"`        // spell rules: inline allowed words
 
-	msgTmpl *template.Template // compiled at load time
 }
 
 // msgData is the template data passed to message templates.

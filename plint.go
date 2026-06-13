@@ -25,15 +25,15 @@ type Action struct {
 // Finding is a single lint result, Vale-compatible.
 type Finding struct {
 	File        string `json:"File"`
-	Line        int    `json:"Line"`
-	Span        [2]int `json:"Span"` // [col_start, col_end], 1-based
 	Check       string `json:"Check"`
 	Message     string `json:"Message"`
 	Severity    string `json:"Severity"`
 	Match       string `json:"Match"`
 	Link        string `json:"Link"`
-	Action      Action `json:"Action"`
 	Description string `json:"Description"`
+	Action      Action `json:"Action"`
+	Span        [2]int `json:"Span"` // [col_start, col_end], 1-based
+	Line        int    `json:"Line"`
 }
 
 // Linter holds loaded rules and applies them to documents.

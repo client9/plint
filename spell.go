@@ -71,7 +71,7 @@ func buildSpellState(def *rules.RuleDef, ruleDir string) (*spellRuleState, error
 	if err != nil {
 		return nil, fmt.Errorf("spell rule %q: %w", def.ID, err)
 	}
-	if err := base.SetSuggester(gospell.NewLevenshteinSuggester(gospell.LevenshteinOptions{})); err != nil {
+	if err := base.SetSuggester(gospell.NewMutationSuggester(gospell.MutationOptions{})); err != nil {
 		return nil, fmt.Errorf("spell rule %q: configure suggester: %w", def.ID, err)
 	}
 

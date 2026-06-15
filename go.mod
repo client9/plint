@@ -3,14 +3,9 @@ module github.com/nickg/plint
 go 1.25.0
 
 require (
-	github.com/client9/gospell v0.0.0-00010101000000-000000000000
+	github.com/client9/gospell v0.9.1
 	github.com/client9/tojson v1.0.0
 	github.com/yuin/goldmark v1.8.2
 )
 
-require (
-	github.com/agnivade/levenshtein v1.2.1 // indirect
-	golang.org/x/text v0.36.0 // indirect
-)
-
-replace github.com/client9/gospell => ../gospell
+require golang.org/x/text v0.36.0 // indirect

@@ -1,0 +1,8 @@
+id: spelling
+type: spell
+message: '"{{.Match}}" may be misspelled{{if .Suggestions}}; try: {{join .Suggestions ", "}}{{end}}'
+severity: warning
+dictionaries:
+  - en_US
+words:
+  - plint

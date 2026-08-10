@@ -1,0 +1,11 @@
+id: throat-clearing
+message: '"{{.Match}}" adds no logical content — cut it'
+severity: warning
+tokens:
+  - at the end of the day
+  - make no mistake
+  - here's the thing
+  - if anything
+  - more than that
+  - in fact
+  - indeed

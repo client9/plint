@@ -1,0 +1,14 @@
+id: adverbial-inflation
+message: '"{{.Match}}" adds no logical content — cut it or replace with specific evidence'
+severity: warning
+tokens:
+  - deeply
+  - profoundly
+  - fundamentally
+  - genuinely
+  - truly
+  - remarkably
+  - clearly
+  - obviously
+  - certainly
+  - undeniably

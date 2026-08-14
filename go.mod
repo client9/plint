@@ -1,6 +1,6 @@
 module github.com/nickg/plint
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/client9/gospell v0.9.2
